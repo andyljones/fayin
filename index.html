@@ -5,35 +5,106 @@
   integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
   crossorigin="anonymous"></script>
 <script>
-var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
-var SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList;
-var SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
 
-var recognition = new SpeechRecognition();
-recognition.continuous = true;
-recognition.interimResults = true;
-recognition.lang = "zh-CN";
-recognition.onresult = (event) => {
-    // delve into words detected results & get the latest
-    // total results detected
-    var resultsLength = event.results.length -1 ;
-    // get length of latest results
-    var ArrayLength = event.results[resultsLength].length -1;
-    // get last word detected
-    var saidWord = event.results[resultsLength][ArrayLength].transcript;
-    
-    // append the last word to the bottom sentence
-    $("#transcript").text(saidWord);
+TARGET = "Initial target";
+TRANSCRIPT = "Initial transcript";
+FINALIZED = false;
+
+function update_text() {
+    const is_finalized = FINALIZED? "finalized" : "unfinalized" 
+
+    const common_len = Math.min(TARGET.length, TRANSCRIPT.length);
+    var target = [];
+    var transcript = [];
+    for (var i=0; i < common_len; i++) {
+        var cls = TARGET[i] == TRANSCRIPT[i]? 'correct' : 'error';
+        target.push($('<span/>').addClass(cls).html(TARGET[i]));
+        transcript.push($('<span/>').addClass(cls).addClass(is_finalized).html(TRANSCRIPT[i]));
+    }
+
+    for (var i=common_len; i < TARGET.length; i++) {
+        target.push($('<span/>').addClass('unseen').html(TARGET[i]));
+    }
+
+    for (var i=common_len; i < TRANSCRIPT.length; i++) {
+        transcript.push($('<span/>').addClass('error').addClass(is_finalized).html(TRANSCRIPT[i]));
+    }
+
+    $("#target").html(target);
+    $("#transcript").html(transcript);
 }
 
+function pick_target() {
+    TARGET = "你好你是什么";
+    TRANSCRIPT = "";
+    update_text();
+}
 
-recognition.start();
+function handle_recognition(event) {
+    var result = event.results[event.results.length-1]
+    TRANSCRIPT = result[0].transcript;
+    FINALIZED = result.isFinal;
+    update_text()
+}
+
+function start_recogniser() {
+    var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
+    var SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList;
+    var SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
+
+    var recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "zh-CN";
+    recognition.onresult = handle_recognition;
+
+    recognition.start();
+}
+
+$(document).ready(() => {
+    pick_target();
+    start_recogniser();
+});
 
 </script>
 
+<style>
+    #contents {
+        display: block; 
+        margin: auto;
+        width: 800px;
+        border: 1px solid black;
+        font-size: x-large;
+    }
+
+    #contents p {
+        margin: 10px;
+        height: 1.5em;
+    }
+
+    .correct {
+        color: green;
+    }
+
+    .unfinalized {
+        opacity: .5;
+    }
+
+    .finalized {
+        opacity: 1.;
+    }
+
+    .error {
+        color: red;
+    }
+</style>
+
 </head>
 <body>
-    <p id="transcript"></p>
+    <div id="contents">
+        <p id="target"> </p>
+        <p id="transcript"> </p>
+    </div>
 </body>
 
 </html>
