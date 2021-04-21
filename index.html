@@ -9,68 +9,92 @@
 PUNC = ' ，!"%,-./:;?[]°·—‘’“”…℃─\u3000、。《》【】'
 
 SENTENCES = [{
-    "hanzi": "很好，谢谢。",
+    "hanzi": "很好",
     "pinyin": "nǐ hǎo",
     "english": "Hello",
     "hsk": 1, "limit": 1, "part": 1}];
 
 TARGET = "Initial target";
+PINYIN = "Initial Pinyin"
+ENGLISH = "Initial English"
 TRANSCRIPT = "Initial transcript";
 FINALIZED = false;
 
 function fetch_sentences(level) {
-    $.getJSON('sentences-1.json', (data) => { 
+    $.getJSON('sentences-1-short.json', (data) => { 
         SENTENCES = data; 
     })
 }
 
-function update_text() {
-    const is_finalized = FINALIZED? "finalized" : "unfinalized" 
-
+function matching() {
     var target = [];
     var transcript = [];
     var target_idx = 0, trans_idx = 0;
     while (true) {
         if ((target_idx < TARGET.length) && (trans_idx < TRANSCRIPT.length)) {
             if (PUNC.includes(TARGET[target_idx])) {
-                target.push($('<span/>').addClass('correct').html(TARGET[target_idx]));
-                transcript.push($('<span/>').addClass('correct').html(TARGET[target_idx]));
+                target.push(['punc', TARGET[target_idx]]);
+                transcript.push(['punc', TARGET[target_idx]]);
                 target_idx += 1;
+            } else if (TARGET[target_idx] == TRANSCRIPT[trans_idx]) {
+                target.push(['correct', TARGET[target_idx]]);
+                transcript.push(['correct', TRANSCRIPT[trans_idx]]);
+                target_idx += 1;
+                trans_idx += 1;
             } else {
-                var cls = TARGET[target_idx] == TRANSCRIPT[trans_idx]? 'correct' : 'error';
-                target.push($('<span/>').addClass(cls).html(TARGET[target_idx]));
-                transcript.push($('<span/>').addClass(cls).addClass(is_finalized).html(TRANSCRIPT[trans_idx]));
+                target.push(['error', TARGET[target_idx]]);
+                transcript.push(['error', TRANSCRIPT[trans_idx]]);
                 target_idx += 1;
                 trans_idx += 1;
             }
         } else if (target_idx < TARGET.length) {
-            target.push($('<span/>').addClass('unseen').html(TARGET[target_idx]));
+            if (PUNC.includes(TARGET[target_idx])) {
+                target.push(['punc', TARGET[target_idx]])
+            } else {
+                target.push(['unseen', TARGET[target_idx]])
+            }
             target_idx += 1
         } else if (trans_idx < TRANSCRIPT.length) {
-            transcript.push($('<span/>').addClass('error').addClass(is_finalized).html(TRANSCRIPT[trans_idx]));
+            transcript.push(['error', TRANSCRIPT[trans_idx]])
             trans_idx += 1
         } else {
             break;
         }
     }
 
-    $("#target").html(target);
-    $("#transcript").html(transcript);
+    return [target, transcript];
+}
+
+function update_text() {
+    const is_finalized = FINALIZED? "finalized" : "unfinalized" 
+    var [target, transcript] = matching()
+
+    $("#target").html("");
+    target.forEach(([status, char], _) => {
+        $("#target").append($('<span/>').addClass(status).html(char));
+    });
+
+    $("#transcript").html("");
+    transcript.forEach(([status, char], _) => {
+        $("#transcript").append($('<span/>').addClass(status).addClass(is_finalized).html(char));
+    });
+
+    $("#pinyin").html(PINYIN);
+    $("#english").html(ENGLISH);
 }
 
 function pick_target() {
     const idx = Math.floor(Math.random() * SENTENCES.length)
     TARGET = SENTENCES[idx].hanzi;
     TRANSCRIPT = "";
+    PINYIN = SENTENCES[idx].pinyin;
+    ENGLISH = SENTENCES[idx].english;
     update_text();
 }
 
 function success() {
-    if (!FINALIZED) {
-        return false;
-    }
-    for (var i=0; i<TARGET.length; i++) {
-    }
+    var [target, transcript] = matching()
+    return FINALIZED && target.every(([status, char], _) => (status == 'punc') || (status == 'correct') );
 }
 
 function handle_recognition(event) {
@@ -78,7 +102,7 @@ function handle_recognition(event) {
     TRANSCRIPT = result[0].transcript;
     FINALIZED = result.isFinal;
     update_text()
-    if (FINALIZED & (TARGET == TRANSCRIPT)) {
+    if (success()) {
         pick_target();
     }
 }
@@ -119,6 +143,9 @@ $(document).ready(() => {
         height: 1.5em;
     }
 
+    .punc {
+    }
+
     .correct {
         color: green;
     }
@@ -141,6 +168,8 @@ $(document).ready(() => {
     <div id="contents">
         <p id="target"> </p>
         <p id="transcript"> </p>
+        <p id="pinyin"> </p>
+        <p id="english"> </p>
     </div>
 </body>
 
