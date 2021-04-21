@@ -1,3 +1,5 @@
+import re
+import pandas as pd
 import requests
 import xml.etree.ElementTree as ET
 from io import BytesIO
@@ -31,12 +33,22 @@ def raw_cards(tree):
     
     return cards
 
-if __name__ == '__main__':
-    tree = xml_tree()
-    raw = raw_cards(tree)
-
+def as_pandas(raw):
     subset = []
     for r in raw:
         if 'zh-en' in r['tags']:
-            [desc] = [t for t in r['tags'] if t != 'zh-en'] 
-            subset.append((r['fact'][1], desc))
+            [level] = [t for t in r['tags'] if t != 'zh-en'] 
+            nums = tuple(map(int, re.findall(r'\d+', level)))
+            front, back = r['fact']
+            eng, pinyin = front.split(';;')
+            subset.append((back, eng, pinyin, *nums))
+    return pd.DataFrame(subset, columns=['hanzi', 'pinyin', 'english', 'hsk', 'limit', 'part'])
+
+def save(df):
+    for level, group in df.groupby('hsk'):
+        group.to_json(f'sentences-{level}.json', orient='records')
+
+if __name__ == '__main__':
+    tree = xml_tree()
+    raw = raw_cards(tree)
+    df = as_pandas(raw)

@@ -6,9 +6,21 @@
   crossorigin="anonymous"></script>
 <script>
 
+SENTENCES = [{
+    "hanzi": "你好",
+    "pinyin": "nǐ hǎo",
+    "english": "Hello",
+    "hsk": 1, "limit": 1, "part": 1}];
+
 TARGET = "Initial target";
 TRANSCRIPT = "Initial transcript";
 FINALIZED = false;
+
+function fetch_sentences(level) {
+    $.getJSON('sentences-1.json', (data) => { 
+        SENTENCES = data; 
+    })
+}
 
 function update_text() {
     const is_finalized = FINALIZED? "finalized" : "unfinalized" 
@@ -35,7 +47,8 @@ function update_text() {
 }
 
 function pick_target() {
-    TARGET = "你好你是什么";
+    const idx = Math.floor(Math.random() * SENTENCES.length)
+    TARGET = SENTENCES[idx].hanzi;
     TRANSCRIPT = "";
     update_text();
 }
@@ -45,6 +58,9 @@ function handle_recognition(event) {
     TRANSCRIPT = result[0].transcript;
     FINALIZED = result.isFinal;
     update_text()
+    if (FINALIZED & (TARGET == TRANSCRIPT)) {
+        pick_target();
+    }
 }
 
 function start_recogniser() {
@@ -62,6 +78,7 @@ function start_recogniser() {
 }
 
 $(document).ready(() => {
+    fetch_sentences();
     pick_target();
     start_recogniser();
 });
