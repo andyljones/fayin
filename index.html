@@ -9,7 +9,7 @@
 PUNC = ' ，!"%,-./:;?[]°·—‘’“”…℃─\u3000、。《》【】'
 
 SENTENCES = [{
-    "hanzi": "很好",
+    "hanzi": "你好",
     "pinyin": "nǐ hǎo",
     "english": "Hello",
     "hsk": 1, "limit": 1, "part": 1}];
@@ -20,8 +20,10 @@ ENGLISH = "Initial English"
 TRANSCRIPT = "Initial transcript";
 FINALIZED = false;
 
+MAX_LEN = 7;
+
 function fetch_sentences(level) {
-    $.getJSON('sentences-1-short.json', (data) => { 
+    $.getJSON('sentences-1.json', (data) => { 
         SENTENCES = data; 
     })
 }
@@ -84,11 +86,12 @@ function update_text() {
 }
 
 function pick_target() {
-    const idx = Math.floor(Math.random() * SENTENCES.length)
-    TARGET = SENTENCES[idx].hanzi;
+    var valid = SENTENCES.filter(s => s['hanzi'].length < MAX_LEN);
+    const idx = Math.floor(Math.random() * valid.length)
+    TARGET = valid[idx].hanzi;
     TRANSCRIPT = "";
-    PINYIN = SENTENCES[idx].pinyin;
-    ENGLISH = SENTENCES[idx].english;
+    PINYIN = valid[idx].pinyin;
+    ENGLISH = valid[idx].english;
     update_text();
 }
 
@@ -119,6 +122,14 @@ function start_recogniser() {
     recognition.onresult = handle_recognition;
 
     recognition.start();
+}
+
+function utter() {
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(TARGET);
+    utterance.lang = 'zh-CN';
+    utterance.rate = .5;
+    synth.speak(utterance);
 }
 
 $(document).ready(() => {
@@ -170,6 +181,8 @@ $(document).ready(() => {
         <p id="transcript"> </p>
         <p id="pinyin"> </p>
         <p id="english"> </p>
+
+        <input type="button" value="Speak" onclick="utter()">
     </div>
 </body>
 
