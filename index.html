@@ -6,8 +6,10 @@
   crossorigin="anonymous"></script>
 <script>
 
+PUNC = ' ，!"%,-./:;?[]°·—‘’“”…℃─\u3000、。《》【】'
+
 SENTENCES = [{
-    "hanzi": "你好",
+    "hanzi": "很好，谢谢。",
     "pinyin": "nǐ hǎo",
     "english": "Hello",
     "hsk": 1, "limit": 1, "part": 1}];
@@ -25,21 +27,31 @@ function fetch_sentences(level) {
 function update_text() {
     const is_finalized = FINALIZED? "finalized" : "unfinalized" 
 
-    const common_len = Math.min(TARGET.length, TRANSCRIPT.length);
     var target = [];
     var transcript = [];
-    for (var i=0; i < common_len; i++) {
-        var cls = TARGET[i] == TRANSCRIPT[i]? 'correct' : 'error';
-        target.push($('<span/>').addClass(cls).html(TARGET[i]));
-        transcript.push($('<span/>').addClass(cls).addClass(is_finalized).html(TRANSCRIPT[i]));
-    }
-
-    for (var i=common_len; i < TARGET.length; i++) {
-        target.push($('<span/>').addClass('unseen').html(TARGET[i]));
-    }
-
-    for (var i=common_len; i < TRANSCRIPT.length; i++) {
-        transcript.push($('<span/>').addClass('error').addClass(is_finalized).html(TRANSCRIPT[i]));
+    var target_idx = 0, trans_idx = 0;
+    while (true) {
+        if ((target_idx < TARGET.length) && (trans_idx < TRANSCRIPT.length)) {
+            if (PUNC.includes(TARGET[target_idx])) {
+                target.push($('<span/>').addClass('correct').html(TARGET[target_idx]));
+                transcript.push($('<span/>').addClass('correct').html(TARGET[target_idx]));
+                target_idx += 1;
+            } else {
+                var cls = TARGET[target_idx] == TRANSCRIPT[trans_idx]? 'correct' : 'error';
+                target.push($('<span/>').addClass(cls).html(TARGET[target_idx]));
+                transcript.push($('<span/>').addClass(cls).addClass(is_finalized).html(TRANSCRIPT[trans_idx]));
+                target_idx += 1;
+                trans_idx += 1;
+            }
+        } else if (target_idx < TARGET.length) {
+            target.push($('<span/>').addClass('unseen').html(TARGET[target_idx]));
+            target_idx += 1
+        } else if (trans_idx < TRANSCRIPT.length) {
+            transcript.push($('<span/>').addClass('error').addClass(is_finalized).html(TRANSCRIPT[trans_idx]));
+            trans_idx += 1
+        } else {
+            break;
+        }
     }
 
     $("#target").html(target);
@@ -51,6 +63,14 @@ function pick_target() {
     TARGET = SENTENCES[idx].hanzi;
     TRANSCRIPT = "";
     update_text();
+}
+
+function success() {
+    if (!FINALIZED) {
+        return false;
+    }
+    for (var i=0; i<TARGET.length; i++) {
+    }
 }
 
 function handle_recognition(event) {

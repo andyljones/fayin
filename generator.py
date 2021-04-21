@@ -5,6 +5,9 @@ import xml.etree.ElementTree as ET
 from io import BytesIO
 from zipfile import ZipFile
 
+BAD = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghiklmnopqrstuvwxyz'
+
+# Lifted from https://mnemosyne-proj.org/cards/20000-chinese-sentences-translations-and-pinyin
 URL = 'https://mnemosyne-proj.org/sites/default/files/cards/chinese_sentences.cards'
 
 def xml_tree():
@@ -45,7 +48,9 @@ def as_pandas(raw):
     return pd.DataFrame(subset, columns=['hanzi', 'pinyin', 'english', 'hsk', 'limit', 'part'])
 
 def save(df):
-    for level, group in df.groupby('hsk'):
+    # Get rid of phrases with Latin numbers or alphanumeric chars in
+    good = df[~df.hanzi.str.contains('|'.join(list(BAD)))]
+    for level, group in good.groupby('hsk'):
         group.to_json(f'sentences-{level}.json', orient='records')
 
 if __name__ == '__main__':
