@@ -1,0 +1,39 @@
+<html>
+<head>
+<script
+  src="https://code.jquery.com/jquery-3.6.0.min.js"
+  integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+  crossorigin="anonymous"></script>
+<script>
+var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
+var SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList;
+var SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
+
+var recognition = new SpeechRecognition();
+recognition.continuous = true;
+recognition.interimResults = true;
+recognition.lang = "zh-CN";
+recognition.onresult = (event) => {
+    // delve into words detected results & get the latest
+    // total results detected
+    var resultsLength = event.results.length -1 ;
+    // get length of latest results
+    var ArrayLength = event.results[resultsLength].length -1;
+    // get last word detected
+    var saidWord = event.results[resultsLength][ArrayLength].transcript;
+    
+    // append the last word to the bottom sentence
+    $("#transcript").text(saidWord);
+}
+
+
+recognition.start();
+
+</script>
+
+</head>
+<body>
+    <p id="transcript"></p>
+</body>
+
+</html>
