@@ -3,6 +3,15 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 <script>
 
+var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
+var SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList;
+var SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
+RECOGNIZER = new SpeechRecognition();
+RECOGNIZER.continuous = true;
+RECOGNIZER.interimResults = true;
+RECOGNIZER.lang = "zh-CN";
+
+
 PUNC = ' ，!"%,-./:;?[]°·—‘’“”…℃─\u3000、。《》【】'
 
 SENTENCES = [{
@@ -108,17 +117,10 @@ function handle_recognition(event) {
 }
 
 function start_recogniser() {
-    var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
-    var SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList;
-    var SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
+    RECOGNIZER.onresult = handle_recognition;
+    RECOGNIZER.onomatch = () => {FINALIZED = true; update_text(); }
+    RECOGNIZER.start();
 
-    var recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "zh-CN";
-    recognition.onresult = handle_recognition;
-
-    recognition.start();
 }
 
 function utter() {
@@ -169,6 +171,18 @@ $(document).ready(() => {
     .error {
         color: red;
     }
+
+    .spoiler {
+        cursor: pointer;
+        color: red;
+    }
+
+    .spoiler {
+        color: white;
+    }
+    .spoiler:hover {
+        color: black;
+    }
 </style>
 
 </head>
@@ -176,8 +190,8 @@ $(document).ready(() => {
     <div id="contents">
         <p id="target"> </p>
         <p id="transcript"> </p>
-        <p id="pinyin"> </p>
-        <p id="english"> </p>
+        <p id="pinyin" class="spoiler"> </p>
+        <p id="english" class="spoiler"> </p>
 
         <input type="button" value="Speak" onclick="utter()">
         <input type="button" value="Next" onclick="pick_target()">
